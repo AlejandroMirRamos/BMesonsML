@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outputs generados (figuras, modelo entrenado)
+outputs/
+
+# Claude Code
+.claude/
