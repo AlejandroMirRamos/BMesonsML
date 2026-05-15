@@ -4,6 +4,8 @@ XGBoost likelihood emulator for B-meson SMEFT anomalies, based on the SMEFT19 gl
 
 **Reference**: [arXiv:2412.15830](https://arxiv.org/abs/2412.15830)
 
+**Notebook**: [View on GitHub](https://github.com/alejandromirramos/bmesonsml/blob/main/notebooks/xgboost_optimized.ipynb) | [Open in nbviewer](https://nbviewer.org/github/alejandromirramos/bmesonsml/blob/main/notebooks/xgboost_optimized.ipynb)
+
 ---
 
 ## Overview
