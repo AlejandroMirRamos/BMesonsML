@@ -1,0 +1,16 @@
+numpy
+pandas
+matplotlib
+scipy
+scikit-learn
+imbalanced-learn
+xgboost
+shap
+flavio
+wilson
+smelli
+iminuit
+git+https://github.com/Jorge-Alda/parscanning
+git+https://github.com/Jorge-Alda/SMEFT19
+ipykernel
+jupyterlab
