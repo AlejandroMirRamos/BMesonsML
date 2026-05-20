@@ -40,12 +40,13 @@ def init_smeft():
 
 def compute_likelihood(C1: float, C3: float, bq: float) -> float:
     """Evalúa log-likelihood en un punto. Devuelve -inf si falla el cálculo."""
+    import SMEFT19
     from SMEFT19 import likelihood_global
-    from SMEFT19.scenarios import rotBIII
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         try:
-            lg = likelihood_global([C1, C3, bq], rotBIII)
+            lg = likelihood_global([C1, C3, 0.0, 0.0, 0.0, bq],
+                                   SMEFT19.scenarios.massrotation)
             return max(float(lg), -200.0)
         except Exception:
             return float('-inf')
