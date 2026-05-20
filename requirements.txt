@@ -6,6 +6,7 @@ scikit-learn
 imbalanced-learn
 xgboost
 shap
+pyyaml
 flavio
 wilson
 smelli
