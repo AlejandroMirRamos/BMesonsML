@@ -1,17 +1,31 @@
-numpy
-pandas
-matplotlib
+# Paper-faithful stack for the rotBIII / Scenario III analysis — Python 3.9.
+# Reproduces the `.venv-paper` environment used by the `bmesonml-paper` kernel.
+#
+# IMPORTANT: stock flavio/smelli lack R(J/psi), the Belle II B+->K+nunu result and
+# the updated R(D*), and yield a wrong (C1=C3) best-fit. The Jorge-Alda forks below
+# are required — do NOT replace them with the PyPI releases. See README_2025.md.
+
+# --- b-physics stack (forks + pinned versions) ---
+git+https://github.com/Jorge-Alda/flavio@BctoJpsi          # adds Rtaumu(Bc->J/psilnu)
+git+https://github.com/Jorge-Alda/smelli@custom_measurements  # has add_measurements
+git+https://github.com/Jorge-Alda/SMEFT19
+git+https://github.com/Jorge-Alda/parscanning
+wilson==2.0
+rundec==0.6
+
+# --- ML / analysis ---
+numpy<2
 scipy
+pandas
 scikit-learn
-imbalanced-learn
 xgboost
 shap
+imbalanced-learn
+matplotlib
 pyyaml
-flavio
-wilson
-smelli
-iminuit
-git+https://github.com/Jorge-Alda/parscanning
-git+https://github.com/Jorge-Alda/SMEFT19
+iminuit>=2.11
+
+# --- build / Jupyter kernel ---
+setuptools<81
 ipykernel
 jupyterlab

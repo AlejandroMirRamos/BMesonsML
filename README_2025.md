@@ -14,6 +14,9 @@ Built with `uv` to match `SMEFT19/requirements.txt`:
 - `smelli @ git+https://github.com/Jorge-Alda/smelli@custom_measurements`  (has `add_measurements`)
 - `wilson==2.0`, `rundec==0.6`, `setuptools<81`, `iminuit>=2.11`, `scikit-learn`, `xgboost`, `shap`, `matplotlib`
 
+This exact stack is pinned in `requirements.txt`, so `pip install -r requirements.txt`
+into a fresh **Python 3.9** venv reproduces it.
+
 (Already created at `BMesonsML/.venv-paper`. To rebuild from scratch see `memory/bmesonml_paper_env.md`.)
 
 ## 2. Updated measurements — `data/measurements_2025.yml`
