@@ -1,0 +1,27 @@
+# Updated experimental measurements for the Scenario III global fit (2025/2026).
+# Loaded into flavio via flavio.measurements.read_file, then injected into the
+# smelli global likelihood with restart_smelli (see scripts/setup_likelihood.py).
+#
+# Sources:
+#  - R(D), R(D*): HFLAV CKM 2025 world average
+#      https://hflav-eos.web.cern.ch/hflav-eos/semi/ckm25/html/RDsDsstar/RDRDs.html
+#  - BR(B+->K+ nu nu): Belle II 362 fb^-1 (evidence, 2.7 sigma above SM)
+#  - R(J/psi): LHCb/CMS world average (tau/mu), large uncertainty
+
+HFLAV CKM2025 RDRDstar:
+  experiment: HFLAV
+  inspire: HFLAV:CKM2025
+  values:
+    Rtaul(B->Dlnu): 0.358 ± 0.024
+    Rtaul(B->D*lnu): 0.281 ± 0.011
+  correlation: -0.374
+
+BelleII BKnunu 2024:
+  experiment: BelleII
+  values:
+    BR(B+->Knunu): (2.3 ± 0.7)e-5
+
+WA RJpsi 2025:
+  experiment: World Average
+  values:
+    Rtaumu(Bc->J/psilnu): 0.52 ± 0.20
