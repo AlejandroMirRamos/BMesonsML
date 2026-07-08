@@ -80,7 +80,11 @@ def refit_bestfit(out_path=OUT, setup=True):
     d_ellipse = np.diag(1.0 / d)
     sig = np.sqrt(np.diag(cov))
     print(f"marginal sigmas: C1={sig[0]:.4f} C3={sig[1]:.4f} bq={sig[2]:.4f}", flush=True)
-    _chk = np.sqrt(np.diag(v.T @ np.diag(1.0 / d) @ v))
+    # verify the stored (v, d_ellipse) reproduce cov exactly the way the notebook and
+    # regenerate_dataset.py reconstruct it: Sigma = v.T @ diag(1/eig) @ v with
+    # eig = diag(d_ellipse) = 1/d  (=> 1/eig = d), NOT diag(1/d).
+    _eig = np.diag(d_ellipse)
+    _chk = np.sqrt(np.diag(v.T @ np.diag(1.0 / _eig) @ v))
     assert np.allclose(_chk, sig), f"covariance round-trip mismatch: {_chk} vs {sig}"
 
     values = {

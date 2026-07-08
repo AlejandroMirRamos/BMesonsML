@@ -10,7 +10,7 @@ XGBoost likelihood emulator for B-meson SMEFT anomalies, based on the SMEFT19 gl
 
 ## Overview
 
-This repository implements a machine-learning emulator for the global SMEFT19 log-likelihood in the three-parameter space `(C₁, C₃, βq)` of Scenario III. The emulator replaces expensive SMEFT19 evaluations with an XGBoost surrogate, then uses it to reproduce several figures of the global-fit paper — χ² validation and the Monte-Carlo Δχ² distribution (Fig 7), Pearson correlation matrices over WET coefficients and flavor observables (Figs 10–11), and a likelihood-map + speed benchmark that quantifies the ML speed-up (Fig 8).
+This repository implements a machine-learning emulator for the global SMEFT19 log-likelihood in the three-parameter space `(C₁, C₃, βq)` of Scenario III. The emulator replaces expensive SMEFT19 evaluations with an XGBoost surrogate, then uses it to reproduce the B-physics figures of the paper: χ² validation and the Monte-Carlo Δχ² distribution (Fig 7), the Pearson correlation matrix of the flavour observables (Fig 11), and a likelihood-map + speed benchmark that quantifies the ML speed-up (Fig 8). The WET-coefficient correlation matrix of the old Fig 10 was dropped from the paper and is no longer computed.
 
 > The dataset and best fit are regenerated with the **2025/2026 measurements** and a paper-faithful software stack. See **[README_2025.md](README_2025.md)** for the environment, the updated experimental inputs, and the sampling method.
 
@@ -34,7 +34,8 @@ BMesonsML/
 │   ├── setup_likelihood.py       ← builds the SMEFT19 global likelihood (2025 measurements)
 │   ├── refit_bestfit.py          ← best-fit + covariance → data/rotBIII_2025.yaml
 │   ├── regenerate_dataset.py     ← Sobol + covariance cloud + plane grids → combined_rotBIII_2025.dat
-│   ├── fit3.py                   ← best-fit + 2D grid likelihood maps (standalone)
+│   ├── densify_highbq.py         ← active-learning densification of the high-βq slab (resumable)
+│   ├── fit3.py                   ← legacy: best-fit + 2D grid likelihood maps (standalone)
 │   └── generate_dataset.py       ← legacy standalone LHS dataset generator
 ├── data/
 │   ├── measurements_2025.yml     ← updated experimental inputs (HFLAV 2025, Belle II, …)
@@ -50,13 +51,15 @@ BMesonsML/
 
 ## Dataset generation
 
-The training dataset (≈ 13.9k points) combines three complementary samplings (`scripts/regenerate_dataset.py`):
+The base training dataset (≈ 13.9k points) combines three complementary samplings (`scripts/regenerate_dataset.py`):
 
 1. **Sobol global** (`N_SOBOL≈4096`) — low-discrepancy coverage of the full `(C₁, C₃, βq)` cube.
 2. **Covariance-based cloud** (`N_LOCAL≈5000`) — Gaussian samples drawn with the fit covariance Σ around the best fit (two-scale mix). Following the real likelihood ellipsoid, it densifies the narrow `C₁` ridge automatically — no hand-tuned grid needed.
 3. **Three 2D plane grids** (40×40, third parameter fixed at the best fit) — kept only for the real-vs-emulator likelihood maps of §8.
 
-The best fit (and its covariance) are located with `SMEFT19.ellipse.minimum` (`scripts/refit_bestfit.py`) and cached in `data/rotBIII_2025.yaml`. Generation is parallelized across CPU cores (SMEFT19 is CPU-only). See [README_2025.md](README_2025.md) §4 for the rationale.
+On top of the base design, an **active-learning densification** (`scripts/densify_highbq.py`, controlled by the notebook flag `FORCE_DENSIFY`) adds ~12k exact SMEFT19 points in the weakly-constrained high-βq slab, bringing the total to ≈ 26k points. Without it, the emulator over-extrapolates the log-likelihood in that data-sparse corner, which produced a spurious spike at Δχ² = 0 in the Fig 7b histogram and biased the high-βq posterior. The extra points are streamed to `data/extra_highbq_2025.dat` (resumable) and spliced into the dataset with the plane grids kept last, so the Fig 8a slicing is unchanged.
+
+The best fit (and its covariance) are located with `SMEFT19.ellipse.minimum` (`scripts/refit_bestfit.py`) and cached in `data/rotBIII_2025.yaml`, which supersedes the old `rotBIII.yaml` (its stored point was a `C₁ = C₃` local minimum, not the true Scenario III best fit). Generation is parallelized across CPU cores (SMEFT19 is CPU-only). See [README_2025.md](README_2025.md) §4 for the rationale.
 
 ---
 
@@ -69,6 +72,7 @@ jupyter notebook notebooks/xgboost_optimized.ipynb
 
 # 2. Run all cells. The first Section-1 cell builds the best fit + dataset on the
 #    first run (or with FORCE_REBUILD=True), then caches them; later runs load fast.
+#    FORCE_DENSIFY=True (default) also runs the high-βq densification (slow, resumable).
 ```
 
 Alternatively, generate the best fit and dataset from the command line:
@@ -86,17 +90,26 @@ N_SOBOL=2048 N_LOCAL=3000 GRID=30 N_WORKERS=16 .venv-paper/bin/python scripts/re
 
 | § | Step | Description |
 |---|------|-------------|
-| 1 | Dataset | Best fit + Sobol/covariance/grid sampling → `data/combined_rotBIII_2025.dat` |
+| 1 | Dataset | Best fit + Sobol/covariance/grid sampling + high-βq densification → `data/combined_rotBIII_2025.dat` |
 | 2 | Preprocessing | Filter (`likelihood > LH_MIN`), EDA, 84/16 train/val split (no SMOTE — see notebook) |
 | 3 | Training | XGBoost (CPU) with early stopping + learning curve |
 | 4 | SHAP | Beeswarm, bar, waterfall, and dependence plots |
-| 5 | Prediction | `predict_point(C1, C3, bq)` with exponential boundary penalties |
+| 5 | Save | Persist the trained surrogate to `outputs/xgboost_scIII.json` |
 | 6 | Fig 7 | χ² validation (7a) + Monte-Carlo Δχ² distribution vs χ²(3) (7b) |
-| 7 | Figs 10–11 | Pearson correlations over WET coefficients and flavor observables (RGE + flavio) |
+| 7 | Fig 11 | Pearson correlation matrix of the flavour observables (RGE + flavio, full 15k chain) |
 | 8 | Fig 8 | Real-vs-emulator likelihood maps + XGBoost-vs-SMEFT19 speed benchmark |
 
 ---
 
 ## Results
 
-The emulator reproduces the SMEFT19 log-likelihood with a high Pearson correlation on the validation set (r ≈ 0.99, R² ≈ 0.97 on rotBIII). The XGBoost-vs-SMEFT19 speed benchmark (§8) shows a speed-up of several orders of magnitude, which is what makes the full Monte-Carlo analysis (§§6–7) tractable.
+On the densified dataset the emulator reproduces the SMEFT19 log-likelihood with r = 0.987 and R² = 0.974 on the held-out validation set (quoted as r ≈ 0.99, R² ≈ 0.98 in the paper). The best fit sits at C₁ = −0.185, C₃ = −0.110, βq = 0.83 with Δχ²_SM ≈ 49, a pull above 6σ that clearly breaks the C₁ = C₃ degeneracy of Scenarios I/II. In the Fig 11 correlation matrix the R_D ↔ BR(B⁺→K⁺νν̄) correlation, which is ≈ 0.99 in Scenario II, drops to ≈ 0.06 once C₁ and C₃ vary independently — the distinctive prediction of Scenario III.
+
+Timing (paper, single CPU core, cold caches):
+
+| | XGBoost emulator | Exact SMEFT19 | Speed-up |
+|---|---|---|---|
+| Per evaluation | ≈ 34 µs | ≈ 3.3 s | ≈ 1.0×10⁵ |
+| Training set (≈ 2.6×10⁴ points) | ≈ 0.9 s | ≈ 24 core-h | ≈ 1.0×10⁵ |
+
+This speed-up is what makes the full Monte-Carlo analysis (§§6–7) tractable. The §8 benchmark cell reproduces the measurement, running the exact branch in a cold subprocess so flavio's caches cannot distort it.

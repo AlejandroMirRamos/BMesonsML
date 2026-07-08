@@ -43,6 +43,13 @@ warnings.filterwarnings("ignore")
 from pathlib import Path
 import numpy as np
 from scipy.stats.qmc import Sobol, scale
+try:
+    from threadpoolctl import threadpool_limits
+except Exception:  # no-op fallback so the script still runs without threadpoolctl
+    from contextlib import contextmanager
+    @contextmanager
+    def threadpool_limits(*a, **k):
+        yield
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from setup_likelihood import setup_global_likelihood
@@ -149,22 +156,27 @@ def main():
     todo = pts[done:].tolist()
     t0 = time.time()
     ctx = multiprocessing.get_context("fork")
-    pool = ctx.Pool(N_WORKERS)
-    try:
-        with open(EXTRA, "a", newline="") as f:
-            w = csv.writer(f)
-            for i, (row, lk) in enumerate(zip(todo, pool.imap(_eval, todo, chunksize=16)), done + 1):
-                w.writerow([*row, lk])
-                if i % 500 == 0 or i == N_EXTRA:
-                    f.flush()
-                    el = time.time() - t0
-                    eta = el / (i - done) * (N_EXTRA - i)
-                    print(f"  {i}/{N_EXTRA} | {el:.0f}s | ETA {eta:.0f}s", flush=True)
-    finally:
-        # forked SMEFT19/flavio workers carry threaded BLAS state and can spin on a
-        # graceful pool join; terminate() reaps them immediately instead of hanging.
-        pool.terminate()
-        pool.join()
+    # Cap BLAS to 1 thread PER WORKER before forking: each SMEFT19 eval runs
+    # numpy/scipy/wilson linear algebra, so N_WORKERS processes each spawning a
+    # multi-threaded BLAS pool oversubscribe the machine badly (~20x slowdown on a
+    # 24-core box). Forked workers inherit this cap; it is scoped to the eval loop.
+    with threadpool_limits(limits=1):
+        pool = ctx.Pool(N_WORKERS)
+        try:
+            with open(EXTRA, "a", newline="") as f:
+                w = csv.writer(f)
+                for i, (row, lk) in enumerate(zip(todo, pool.imap(_eval, todo, chunksize=16)), done + 1):
+                    w.writerow([*row, lk])
+                    if i % 500 == 0 or i == N_EXTRA:
+                        f.flush()
+                        el = time.time() - t0
+                        eta = el / (i - done) * (N_EXTRA - i)
+                        print(f"  {i}/{N_EXTRA} | {el:.0f}s | ETA {eta:.0f}s", flush=True)
+        finally:
+            # forked SMEFT19/flavio workers carry threaded BLAS state and can spin on a
+            # graceful pool join; terminate() reaps them immediately instead of hanging.
+            pool.terminate()
+            pool.join()
     print(f"\nextra evaluations done in {time.time()-t0:.0f}s -> {EXTRA.name}", flush=True)
     assemble()
 

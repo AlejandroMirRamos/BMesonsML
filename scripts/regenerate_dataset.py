@@ -44,6 +44,13 @@ from pathlib import Path
 import numpy as np
 import yaml
 from scipy.stats.qmc import Sobol, scale
+try:
+    from threadpoolctl import threadpool_limits
+except Exception:  # no-op fallback so the script still runs without threadpoolctl
+    from contextlib import contextmanager
+    @contextmanager
+    def threadpool_limits(*a, **k):
+        yield
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from setup_likelihood import setup_global_likelihood
@@ -150,7 +157,7 @@ def regenerate(out_path=OUT, bf_file=BF_FILE, setup=True):
 
     t0 = time.time()
     ctx = multiprocessing.get_context("fork")
-    with ctx.Pool(N_WORKERS) as pool, open(out_path, "w", newline="") as f:
+    with threadpool_limits(limits=1), ctx.Pool(N_WORKERS) as pool, open(out_path, "w", newline="") as f:
         w = csv.writer(f)
         for done, (row, lk) in enumerate(
             zip(all_pts.tolist(), pool.imap(_eval, all_pts.tolist(), chunksize=16)), 1

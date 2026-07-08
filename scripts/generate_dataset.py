@@ -1,19 +1,19 @@
 """
 generate_dataset.py  –  Latin Hypercube Sampling + SMEFT19 likelihood (rotBIII)
 
-Genera ~10 000 puntos en el espacio (C1, C3, bq) con LHS y evalúa la likelihood
-real usando SMEFT19. Los resultados se escriben incrementalmente para poder
-interrumpir y reanudar la ejecución.
+Legacy standalone generator: ~10 000 points in the (C1, C3, bq) space with LHS,
+evaluating the real SMEFT19 likelihood. Results are written incrementally so the
+run can be interrupted and resumed. Superseded by regenerate_dataset.py.
 
-Rangos del espacio de parámetros (mismo que fit3.py):
+Parameter-space ranges (same as fit3.py):
     C1  ∈ [-0.30,  0.00]
     C3  ∈ [-0.30,  0.00]
     bq  ∈ [  0.00, 3.20]
 
-Uso (desde cualquier directorio):
+Usage (from any directory):
     python scripts/generate_dataset.py                        # 10 000 pts → data/lhs_rotBIII.dat
-    python scripts/generate_dataset.py -n 5000 -o custom.dat  # salida personalizada
-    python scripts/generate_dataset.py --resume               # continúa un run interrumpido
+    python scripts/generate_dataset.py -n 5000 -o custom.dat  # custom output
+    python scripts/generate_dataset.py --resume               # resume an interrupted run
 """
 
 import argparse
@@ -24,14 +24,14 @@ from pathlib import Path
 import numpy as np
 from scipy.stats.qmc import LatinHypercube, scale
 
-# ── Rangos del dominio físico ─────────────────────────────────────────────────
+# ── Physical domain ranges ────────────────────────────────────────────────────
 BOUNDS_LO = np.array([-0.30, -0.30, 0.00])
 BOUNDS_HI = np.array([ 0.00,  0.00, 3.20])
 COLS = ['C1', 'C3', 'bq', 'likelihood']
 
 
 def init_smeft():
-    """Inicializa la medición global de SMEFT19 (llamar una vez al inicio)."""
+    """Initialize the SMEFT19 global measurement (call once at startup)."""
     import SMEFT19
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -39,7 +39,7 @@ def init_smeft():
 
 
 def compute_likelihood(C1: float, C3: float, bq: float) -> float:
-    """Evalúa log-likelihood en un punto. Devuelve -inf si falla el cálculo."""
+    """Evaluate the log-likelihood at a point. Returns -inf if the computation fails."""
     import SMEFT19
     from SMEFT19 import likelihood_global
     with warnings.catch_warnings():
@@ -53,7 +53,7 @@ def compute_likelihood(C1: float, C3: float, bq: float) -> float:
 
 
 def count_existing_lines(path: str) -> int:
-    """Cuenta cuántas líneas ya hay en el archivo (para reanudar)."""
+    """Count how many lines the file already has (to resume)."""
     p = Path(path)
     if not p.exists():
         return 0
@@ -62,8 +62,8 @@ def count_existing_lines(path: str) -> int:
 
 
 def generate(n_points: int, output: str, seed: int = 42):
-    print(f'Iniciando generación de {n_points} puntos con LHS (seed={seed})')
-    print(f'Salida: {output}\n')
+    print(f'Starting generation of {n_points} LHS points (seed={seed})')
+    print(f'Output: {output}\n')
 
     init_smeft()
 
@@ -73,7 +73,7 @@ def generate(n_points: int, output: str, seed: int = 42):
 
     start = count_existing_lines(output)
     if start > 0:
-        print(f'Reanudando desde el punto {start}/{n_points}\n')
+        print(f'Resuming from point {start}/{n_points}\n')
 
     with open(output, 'at', newline='') as f:
         writer = csv.writer(f)
@@ -84,23 +84,23 @@ def generate(n_points: int, output: str, seed: int = 42):
             f.flush()
             if (i + 1) % 100 == 0:
                 pct = 100 * (i + 1) / n_points
-                print(f'  [{i+1:6d}/{n_points}]  {pct:5.1f}%  último lg={lg:.3f}',
+                print(f'  [{i+1:6d}/{n_points}]  {pct:5.1f}%  last lg={lg:.3f}',
                       flush=True)
 
-    print(f'\nListo. {n_points} puntos escritos en "{output}".')
+    print(f'\nDone. {n_points} points written to "{output}".')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Genera un dataset LHS con la likelihood de SMEFT19 (rotBIII).'
+        description='Generate an LHS dataset with the SMEFT19 likelihood (rotBIII).'
     )
     default_out = str(Path(__file__).parent.parent / 'data' / 'lhs_rotBIII.dat')
     parser.add_argument('-n', '--n-points', type=int, default=10_000,
-                        help='Número de puntos LHS (default: 10 000)')
+                        help='Number of LHS points (default: 10 000)')
     parser.add_argument('-o', '--output',   default=default_out,
-                        help=f'Archivo de salida CSV (default: {default_out})')
+                        help=f'Output CSV file (default: {default_out})')
     parser.add_argument('-s', '--seed',     type=int, default=42,
-                        help='Semilla aleatoria para LHS (default: 42)')
+                        help='Random seed for LHS (default: 42)')
     args = parser.parse_args()
 
     generate(args.n_points, args.output, args.seed)

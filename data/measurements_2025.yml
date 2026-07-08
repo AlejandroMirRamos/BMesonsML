@@ -6,7 +6,11 @@
 #  - R(D), R(D*): HFLAV CKM 2025 world average
 #      https://hflav-eos.web.cern.ch/hflav-eos/semi/ckm25/html/RDsDsstar/RDRDs.html
 #  - BR(B+->K+ nu nu): Belle II 362 fb^-1 (evidence, 2.7 sigma above SM)
-#  - R(J/psi): LHCb/CMS world average (tau/mu), large uncertainty
+#
+# R(J/psi) = Rtaumu(Bc->J/psilnu) is NOT here: it is not part of any smelli sector, so it
+# cannot be injected via add_measurements. It is applied instead as a standalone Gaussian
+# term in scripts/setup_likelihood.py, using the two reference measurements directly
+# (LHCb 0.71+-0.17+-0.18 [1711.05623] and CMS 0.49+-0.26 [2510.21559]).
 
 HFLAV CKM2025 RDRDstar:
   experiment: HFLAV
@@ -20,8 +24,3 @@ BelleII BKnunu 2024:
   experiment: BelleII
   values:
     BR(B+->Knunu): (2.3 ± 0.7)e-5
-
-WA RJpsi 2025:
-  experiment: World Average
-  values:
-    Rtaumu(Bc->J/psilnu): 0.52 ± 0.20

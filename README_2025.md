@@ -25,15 +25,20 @@ into a fresh **Python 3.9** venv reproduces it.
 |---|---|---|
 | R(D), R(D*) | 0.358 ± 0.024 , 0.281 ± 0.011 (corr −0.374) | HFLAV **CKM 2025** world average |
 | BR(B+→K+νν̄) | (2.3 ± 0.7)×10⁻⁵ | Belle II 362 fb⁻¹ |
-| R(J/ψ) | 0.52 ± 0.20 | LHCb/CMS WA (kept for reference; see note) |
+| R(J/ψ) | 0.71 ± 0.17 ± 0.18 (LHCb), 0.49 ± 0.26 (CMS) | included as a standalone term (see note) |
 
 `scripts/setup_likelihood.py` loads these into flavio and swaps them into smelli's
 global likelihood (`likelihood_rd_rds.yaml`, `likelihood_bqnunu.yaml`) via
 `restart_smelli`, dropping the superseded τ R(D)/R(D*) measurements.
 
-**R(J/ψ) note:** it is *not* in smelli's default global likelihood, and adding it cleanly
-requires editing smelli's bundled YAMLs (which makes `import SMEFT19` fragile). With a ~40%
-error its pull on (C1,C3,βq) is negligible, so it is **excluded from the global fit**.
+**R(J/ψ) note:** the observable `Rtaumu(Bc->J/psilnu)` is *not* in any smelli sector, so it
+cannot be injected via `add_measurements`. It is included instead as a **standalone Gaussian
+term** added to the global log-likelihood in `scripts/setup_likelihood.py`, using the two
+reference measurements directly (LHCb and CMS, as independent constraints). The term is wired
+in by monkeypatching `SMEFT19.likelihood_global` inside `setup_global_likelihood()`, so refit,
+dataset regeneration and the notebook — and every fork worker — all evaluate it. Its ~40%
+experimental error makes the pull on (C1,C3,βq) small, so the best-fit and contours shift only
+slightly (Δχ²_SM ≈ 48 → 49).
 R(K)/R(K*): the newest LHCb results are SM-like and in Scenario III R(K)=R(K*)=1 exactly, so
 they do not move the fit — smelli's defaults are kept.
 
@@ -46,7 +51,14 @@ files are missing (or when `FORCE_REBUILD=True`):
   best-fit + covariance -> `data/rotBIII_2025.yaml`   (~10-15 min)
   training dataset      -> `data/combined_rotBIII_2025.dat`   (~30-60 min)
 
-then the XGBoost / SHAP / Fig 7 / correlation cells run on GPU in the same kernel.
+With `FORCE_DENSIFY=True` (the default), the next Section-1 cell then runs the
+high-βq active-learning densification (`scripts/densify_highbq.py`): ~12k extra
+SMEFT19 points streamed to `data/extra_highbq_2025.dat` (slow, but resumable if
+interrupted) and spliced into the dataset. This removes the emulator
+over-extrapolation spike in Fig 7b; see §4 below and the notebook §1 markdown.
+
+The XGBoost / SHAP / Fig 7 / correlation cells then run in the same kernel
+(XGBoost trains on CPU: the CUDA build available here trains poorly, R² ~ 0.5).
 Subsequent runs load the cached files (fast); set `FORCE_REBUILD=True` to redo.
 
 The heavy logic is in `scripts/` and can also be run standalone:
@@ -72,7 +84,15 @@ hand-tuned dense grid). The new scheme (`scripts/regenerate_dataset.py`):
 3. Three 2D **plane grids** (`GRID=40`, 3×1600) kept only for the Fig 8a real-vs-emulator
    likelihood maps.
 
-Default total ≈ **13.9k** points. The script prints the row ranges of each block.
+Default base total ≈ **13.9k** points. The script prints the row ranges of each block.
+
+4. **High-βq densification** (`scripts/densify_highbq.py`): the base design leaves the
+   weakly-constrained high-βq slab sparse, and there the emulator over-extrapolates the
+   log-likelihood (a false maximum ≈ 25–26 vs a true ≈ 20–22), producing a spike at 0 in
+   the Fig 7b Δχ² histogram and a biased high-βq posterior. The script adds ~12k exact
+   SMEFT19 labels in that slab (resumable stream to `data/extra_highbq_2025.dat`) and
+   splices them in **keeping the plane grids last**, so the Fig 8a slicing is unchanged.
+   Final total ≈ **26k** points.
 
 ## 5. Notebook wiring (already applied)
 
@@ -85,4 +105,4 @@ Default total ≈ **13.9k** points. The script prints the row ranges of each blo
   (`_base = len(df_raw) - 3*GRID_SIZE**2`), so they stay correct if you change the
   point budget.
 
-Everything (including GPU XGBoost training) runs in the single `bmesonml-paper` kernel.
+Everything runs in the single `bmesonml-paper` kernel (XGBoost on CPU).

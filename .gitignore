@@ -9,8 +9,11 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Outputs generados (figuras, modelo entrenado)
+# Generated outputs (figures, trained model)
 outputs/
 
 # Claude Code
 .claude/
+
+# Local backups
+data/*.bak
