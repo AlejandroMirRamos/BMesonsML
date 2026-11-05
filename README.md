@@ -6,13 +6,13 @@ XGBoost likelihood emulator for B-meson SMEFT anomalies, based on the SMEFT19 gl
 
 **Previous Scenario III analysis**: S. Peñaranda, J. Alda, A. Mir, *Flavour Anomalies: A comparative analysis using a machine learning algorithm*, Int. J. Theor. Phys. **65** (2026) 46 · [arXiv:2412.15830](https://arxiv.org/abs/2412.15830)
 
-**Notebook**: [→ Open notebooks/xgboost_optimized.ipynb](https://github.com/AlejandroMirRamos/BMesonsML/blob/main/notebooks/xgboost_optimized.ipynb)
+**Notebooks**: [→ notebooks/xgboost_optimized.ipynb](https://github.com/AlejandroMirRamos/BMesonsML/blob/main/notebooks/xgboost_optimized.ipynb) (main pipeline) · [→ notebooks/validation_bphys.ipynb](https://github.com/AlejandroMirRamos/BMesonsML/blob/main/notebooks/validation_bphys.ipynb) (low-Δχ² validation and closure test)
 
 ---
 
 ## Overview
 
-This repository implements a machine-learning emulator for the global SMEFT19 log-likelihood in the three-parameter space `(C₁, C₃, βq)` of Scenario III. The emulator replaces expensive SMEFT19 evaluations with an XGBoost surrogate, then uses it to reproduce the B-physics figures of the paper: χ² validation and the Monte-Carlo Δχ² distribution (Fig 7), the Pearson correlation matrix of the flavour observables (Fig 11), and a likelihood-map + speed benchmark that quantifies the ML speed-up (Fig 8). The WET-coefficient correlation matrix of the old Fig 10 was dropped from the paper and is no longer computed.
+This repository implements a machine-learning emulator for the global SMEFT19 log-likelihood in the three-parameter space `(C₁, C₃, βq)` of Scenario III. The emulator replaces expensive SMEFT19 evaluations with an XGBoost surrogate, then uses it to reproduce the B-physics figures and tables of the paper (Section 3.1): the held-out χ² validation (Fig. 1a), the SHAP ranking (Fig. 3), the Pearson correlation matrix of the flavour observables (Fig. 4) and the single-core speed benchmark (Table 1). The companion notebook `validation_bphys.ipynb` produces the signed residuals and the posterior-level closure test (Fig. 1b, 1c), the exact-vs-emulator likelihood maps with contours (Fig. 2) and the emulator error by Δχ² region (Table 2).
 
 > The dataset and best fit are regenerated with the **2025/2026 measurements** and a paper-faithful software stack. See **[README_2025.md](README_2025.md)** for the environment, the updated experimental inputs, and the sampling method.
 
@@ -97,9 +97,18 @@ N_SOBOL=2048 N_LOCAL=3000 GRID=30 N_WORKERS=16 .venv-paper/bin/python scripts/re
 | 3 | Training | XGBoost (CPU) with early stopping + learning curve |
 | 4 | SHAP | Beeswarm, bar, waterfall, and dependence plots |
 | 5 | Save | Persist the trained surrogate to `outputs/xgboost_scIII.json` |
-| 6 | Fig 7 | χ² validation (7a) + Monte-Carlo Δχ² distribution vs χ²(3) (7b) |
-| 7 | Fig 11 | Pearson correlation matrix of the flavour observables (RGE + flavio, full 15k chain) |
-| 8 | Fig 8 | Real-vs-emulator likelihood maps + XGBoost-vs-SMEFT19 speed benchmark |
+| 6 | Fig. 1a | Held-out χ² validation (`fig7a_chi2_scatter.pdf`) + Monte-Carlo Δχ² distribution vs χ²(3) (diagnostic) |
+| 7 | Fig. 4 | Pearson correlation matrix of the flavour observables (RGE + flavio, full 15k chain) |
+| 8 | Table 1 | Real-vs-emulator likelihood maps (diagnostic) + XGBoost-vs-SMEFT19 single-core speed benchmark |
+
+`notebooks/validation_bphys.ipynb` (same kernel, no retraining):
+
+| § | Paper item | Description |
+|---|------|-------------|
+| 1 | Fig. 1b | Signed residuals δχ² = χ²_surr − χ²_exact on the held-out set (`ref_bphys_residuals.pdf`) |
+| 2 | Table 2 | MAE/RMSE binned by exact Δχ² from the best fit (all / 2σ / 1σ) |
+| 3 | Fig. 2 | Exact likelihood maps with exact and emulated 1σ/2σ contours, area ratios and best-fit shifts (`ref_bphys_maps_contours.pdf`) |
+| 4 | Fig. 1c | Closure test: exact SMEFT19 χ² re-evaluated at surrogate-posterior points (`ref_bphys_closure.pdf`, cache in `outputs/`) |
 
 ---
 
