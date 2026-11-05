@@ -2,7 +2,9 @@
 
 XGBoost likelihood emulator for B-meson SMEFT anomalies, based on the SMEFT19 global fit of Scenario III (rotBIII).
 
-**Reference**: [arXiv:2412.15830](https://arxiv.org/abs/2412.15830)
+**Paper:** J. Alda, J. Asorey, A. Mir, S. Peñaranda, *Physically Consistent Parameter Inference: Transparent Machine-Learning Emulation in High Energy Physics and Cosmology*, [Universe **12** (2026) 238](https://doi.org/10.3390/universe12080238) · [arXiv:2607.12726](https://arxiv.org/abs/2607.12726) (Section 3.1, B-physics)
+
+**Previous Scenario III analysis**: S. Peñaranda, J. Alda, A. Mir, *Flavour Anomalies: A comparative analysis using a machine learning algorithm*, Int. J. Theor. Phys. **65** (2026) 46 · [arXiv:2412.15830](https://arxiv.org/abs/2412.15830)
 
 **Notebook**: [→ Open notebooks/xgboost_optimized.ipynb](https://github.com/AlejandroMirRamos/BMesonsML/blob/main/notebooks/xgboost_optimized.ipynb)
 
@@ -103,7 +105,7 @@ N_SOBOL=2048 N_LOCAL=3000 GRID=30 N_WORKERS=16 .venv-paper/bin/python scripts/re
 
 ## Results
 
-On the densified dataset the emulator reproduces the SMEFT19 log-likelihood with r = 0.987 and R² = 0.974 on the held-out validation set (quoted as r ≈ 0.99, R² ≈ 0.98 in the paper). The best fit sits at C₁ = −0.185, C₃ = −0.110, βq = 0.83 with Δχ²_SM ≈ 49, a pull above 6σ that clearly breaks the C₁ = C₃ degeneracy of Scenarios I/II. In the Fig 11 correlation matrix the R_D ↔ BR(B⁺→K⁺νν̄) correlation, which is ≈ 0.99 in Scenario II, drops to ≈ 0.06 once C₁ and C₃ vary independently — the distinctive prediction of Scenario III.
+On the densified dataset the emulator reproduces the SMEFT19 log-likelihood with r = 0.992 and R² = 0.984 on the held-out validation set (quoted as r ≈ 0.99, R² ≈ 0.98 in the paper); the mean absolute error is 1.85 χ² units globally but 0.60 within 2σ and 0.50 within 1σ of the best fit (paper Table 2), and a posterior-level closure test against the exact likelihood gives an RMS difference of 1.4 (2σ) and 1.0 (1σ). The best fit sits at C₁ = −0.185, C₃ = −0.110, βq = 0.83 with Δχ²_SM ≈ 49, a pull above 6σ that clearly breaks the C₁ = C₃ degeneracy of Scenarios I/II. In the Fig 11 correlation matrix the R_D ↔ BR(B⁺→K⁺νν̄) correlation, which is ≈ 0.99 in Scenario II, drops to ≈ 0.06 once C₁ and C₃ vary independently — the distinctive prediction of Scenario III.
 
 Timing (paper, single CPU core, cold caches):
 
